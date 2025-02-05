@@ -1,7 +1,13 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { AiTwotoneAlert } from "react-icons/ai"
+import { useChainId, useWriteContract, useAccount, useWaitForTransactionReceipt } from 'wagmi'
+import { chainsToTSender, tsenderAbi, erc20Abi } from '@/constants'
+import { readContract } from "@wagmi/core"
+import { useConfig } from 'wagmi'
+import { CgSpinner } from "react-icons/cg";
+import { type UseWriteContractReturnType } from 'wagmi'
 
 interface AirdropFormProps {
     isUnsafeMode: boolean
@@ -12,6 +18,12 @@ export default function AirdropForm({ isUnsafeMode, onModeChange }: AirdropFormP
     const [tokenAddress, setTokenAddress] = useState('')
     const [recipients, setRecipients] = useState('')
     const [amounts, setAmounts] = useState('')
+    const config = useConfig()
+    const account = useAccount()
+    const chainId = useChainId()
+    const { data: hash, isPending, writeContract } = useWriteContract()
+    const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash })
+
 
     const total = useMemo(() => {
         try {
@@ -26,6 +38,80 @@ export default function AirdropForm({ isUnsafeMode, onModeChange }: AirdropFormP
             return 'Invalid input'
         }
     }, [amounts])
+
+
+    async function handleSubmit() {
+        const contractType = isUnsafeMode ? "no_check" : "tsender"
+        const tSenderAddress = chainsToTSender[chainId][contractType]
+        const result = await getApprovedAmount(tSenderAddress)
+
+        if (result == 0) {
+            await writeContract({
+                abi: erc20Abi,
+                address: tokenAddress as `0x${string}`,
+                functionName: 'approve',
+                args: [tSenderAddress as `0x${string}`, total],
+
+            },
+                {
+                    // onSuccess: () => { console.log("Approved!") },
+                    onError: (error) => {
+                        alert("Error approving, see console!")
+                        console.log(error)
+                    },
+                    // onSettled: () => { console.log("wtf") }
+                })
+        }
+
+        await writeContract({
+            abi: tsenderAbi,
+            address: tSenderAddress as `0x${string}`,
+            functionName: 'airdropERC20',
+            args: [tokenAddress, recipients.split(','), amounts.split(',').map(amt => amt.trim()), total],
+        },
+            {
+                // onSuccess: () => { console.log("Approved 2!") },
+                onError: (error) => {
+                    alert("Error sending, see console!")
+                    console.log(error)
+                },
+                // onSettled: () => { console.log("wtf 2") }
+            })
+    }
+
+
+    async function getApprovedAmount(tSenderAddress: string | null): Promise<number> {
+        if (!tSenderAddress) {
+            alert("This chain only has the safer version!")
+            return 0
+        }
+        const response = await readContract(config, {
+            abi: erc20Abi,
+            address: tokenAddress as `0x${string}`,
+            functionName: 'allowance',
+            args: [account.address, tSenderAddress as `0x${string}`]
+        })
+        return response as number
+    }
+
+    async function sendTokensTransaction() { }
+
+    function getButtonContent() {
+        if (isPending) return (
+            <div className="flex items-center justify-center gap-2 w-full">
+                <CgSpinner className="animate-spin" size={20} />
+                <span>Confirming...</span>
+            </div>
+        )
+        if (isConfirming) return (
+            <div className="flex items-center justify-center gap-2 w-full">
+                <CgSpinner className="animate-spin" size={20} />
+                <span>Waiting for confirmation...</span>
+            </div>
+        )
+        if (isConfirmed) return 'Transaction confirmed.'
+        return isUnsafeMode ? 'Send Tokens (Unsafe)' : 'Send Tokens'
+    }
 
     return (
         <div className={`max-w-2xl mx-auto p-6 ${isUnsafeMode ? 'border-2 border-red-500 rounded-lg' : 'border-2 border-blue-500 rounded-lg'}`}>
@@ -100,7 +186,7 @@ export default function AirdropForm({ isUnsafeMode, onModeChange }: AirdropFormP
                 </div>
 
                 <div>
-                    <label className="block text-sm font-medium mb-2">Amounts (comma separated)</label>
+                    <label className="block text-sm font-medium mb-2">Amounts (wei, comma separated)</label>
                     <textarea
                         value={amounts}
                         onChange={(e) => setAmounts(e.target.value)}
@@ -110,7 +196,7 @@ export default function AirdropForm({ isUnsafeMode, onModeChange }: AirdropFormP
                 </div>
 
                 <div>
-                    <label className="block text-sm font-medium mb-2">Total Amount</label>
+                    <label className="block text-sm font-medium mb-2">Total Amount (Wei)</label>
                     <input
                         type="text"
                         value={total}
@@ -119,13 +205,20 @@ export default function AirdropForm({ isUnsafeMode, onModeChange }: AirdropFormP
                     />
                 </div>
 
+                {/* Check approvals. If approved, then send. If not, approve, then populate send after TX completes. */}
+
                 <button
                     className={`cursor-pointer w-full p-3 rounded-lg text-white transition-colors ${isUnsafeMode
                         ? 'bg-red-500 hover:bg-red-600'
                         : 'bg-blue-500 hover:bg-blue-600'
                         }`}
+                    onClick={handleSubmit}
+                    disabled={isPending}
                 >
-                    {isUnsafeMode ? 'Send Tokens (Unsafe)' : 'Send Tokens'}
+                    {isPending ? getButtonContent()
+                        : isConfirming ? getButtonContent()
+                            : isUnsafeMode ? 'Send Tokens (Unsafe)'
+                                : 'Send Tokens'}
                 </button>
             </div>
         </div>

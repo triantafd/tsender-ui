@@ -1,17 +1,15 @@
 'use client'
 
-import { ConnectKitButton } from 'connectkit'
+import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { FaGithubSquare } from "react-icons/fa";
-import { AiTwotoneAlert } from "react-icons/ai";
 
 export default function Header() {
     return (
+
         <nav className="p-5 border-b-2 flex flex-row justify-between items-center">
             <h1 className="py-4 px-4 font-bold text-3xl">TSender</h1>
+            <h3 className="italic text-left">Batch airdrop tokens and spend the least gas</h3>
             <div className="flex flex-row items-center">
-                <div className="mr-4 p-6 rounded-lg">
-                    Gas Optimized Airdrop
-                </div>
                 <a
                     href="https://github.com/cyfrin/TSender"
                     target="_blank"
@@ -20,7 +18,7 @@ export default function Header() {
                 >
                     <FaGithubSquare size={50} />
                 </a>
-                <ConnectKitButton />
+                <ConnectButton />
             </div>
         </nav>
     )
