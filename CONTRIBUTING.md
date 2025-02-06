@@ -10,7 +10,14 @@ Thanks for wanting to contribute to the project! Here are some guidelines to hel
 - [nvm](https://github.com/nvm-sh/nvm)
   - You'll know you've installed it right if you can run `nvm --version` and get a response like `0.39.0`
 
-## Setup
+# Tests
+
+```bash
+pnpm test:unit # unit tests
+pnpm test:e2e # broken e2e tests
+```
+
+# Anvil Setup
 
 After cloning the repo, and following the `#setup` section from the [README.md](../README.md), you can run the following commands to start the project:
 
@@ -19,7 +26,7 @@ nvm use # This will setup the correct node version
 pnpm run anvil # This will start a locally running anvil server, with TSender deployed
 ```
 
-# tsender-deployed.json
+## tsender-deployed.json
 
 The `tsender-deployed.json` object is a starting state for testing and working with the UI. 
 
