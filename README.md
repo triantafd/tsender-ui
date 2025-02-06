@@ -2,6 +2,9 @@
 
 A 100% client-side UI for the TSender contract.
 
+> [!IMPORTANT]  
+> e2e tests are currently not working
+
 - [TSender UI](#tsender-ui)
 - [Getting Started](#getting-started)
   - [Requirements](#requirements)
