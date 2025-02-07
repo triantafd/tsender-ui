@@ -27,6 +27,7 @@
     "wagmi": "^2.14.9"
   },
   "devDependencies": {
+    "@fleek-platform/next": "^2.2.1",
     "@playwright/test": "1.48.2",
     "@types/node": "^20.12.10",
     "@types/react": "^18.3.1",
