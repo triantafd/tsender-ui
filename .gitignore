@@ -42,6 +42,4 @@ node_modules/
 /playwright/.cache/
 .cache-synpress/
 
-
 .fleek/*
-!.fleek/.gitkeep
