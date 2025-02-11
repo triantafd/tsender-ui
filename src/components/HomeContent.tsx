@@ -1,8 +1,8 @@
-'use client'
+"use client"
 
-import { useState } from 'react'
-import AirdropForm from '@/components/AirdropForm'
-import { useAccount } from 'wagmi'
+import { useState } from "react"
+import AirdropForm from "@/components/AirdropForm"
+import { useAccount } from "wagmi"
 
 export default function HomeContent() {
     const [isUnsafeMode, setIsUnsafeMode] = useState(false)
@@ -11,11 +11,13 @@ export default function HomeContent() {
     return (
         <main>
             {!isConnected ? (
-                <div className="flex items-center justify-center min-h-screen">
-                    <h2 className="text-xl font-medium text-gray-600">Please connect a wallet...</h2>
+                <div className="flex items-center justify-center">
+                    <h2 className="text-xl font-medium text-zinc-600">
+                        Please connect a wallet...
+                    </h2>
                 </div>
             ) : (
-                <div className="container mx-auto p-4">
+                <div className="flex items-center justify-center p-4 md:p-6 xl:p-8">
                     <AirdropForm isUnsafeMode={isUnsafeMode} onModeChange={setIsUnsafeMode} />
                 </div>
             )}

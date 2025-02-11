@@ -2,13 +2,14 @@
 
 Thanks for wanting to contribute to the project! Here are some guidelines to help you get started.
 
-# Getting Started 
+# Getting Started
 
 ## Dev Requirements
+
 - [anvil](https://book.getfoundry.sh/anvil/)
-  - You'll know you've installed it right if you can run `anvil --version` and get a response like `anvil 0.3.0 (5a8bd89 2024-12-20T08:45:53.195623000Z)`
+    - You'll know you've installed it right if you can run `anvil --version` and get a response like `anvil 0.3.0 (5a8bd89 2024-12-20T08:45:53.195623000Z)`
 - [nvm](https://github.com/nvm-sh/nvm)
-  - You'll know you've installed it right if you can run `nvm --version` and get a response like `0.39.0`
+    - You'll know you've installed it right if you can run `nvm --version` and get a response like `0.39.0`
 
 # Tests
 
@@ -28,7 +29,7 @@ pnpm run anvil # This will start a locally running anvil server, with TSender de
 
 ## tsender-deployed.json
 
-The `tsender-deployed.json` object is a starting state for testing and working with the UI. 
+The `tsender-deployed.json` object is a starting state for testing and working with the UI.
 
 - TSender: `0x5FbDB2315678afecb367f032d93F642f64180aa3`
 - Mock token address: `0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512` (can use the `mint` or `mintTo` function)

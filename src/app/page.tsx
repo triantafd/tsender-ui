@@ -1,13 +1,13 @@
-'use client'
+"use client"
 
-import dynamic from 'next/dynamic'
+import dynamic from "next/dynamic"
 
-const HomeContent = dynamic(() => import('@/components/HomeContent'), {
-  ssr: false
+const HomeContent = dynamic(() => import("@/components/HomeContent"), {
+    ssr: false,
 })
 
 export default function Home() {
-  return <HomeContent />
+    return <HomeContent />
 }
 
 // // Why do we need the dynamic import here instead of just hosting the HomeContent here?

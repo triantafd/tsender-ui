@@ -1,8 +1,8 @@
 export function calculateTotal(amounts: string): number {
     const amountArray = amounts
-        .split(',')
+        .split(",")
         .map(amt => amt.trim())
-        .filter(amt => amt !== '')
+        .filter(amt => amt !== "")
         .map(amt => parseFloat(amt))
     if (amountArray.some(isNaN)) {
         return 0
