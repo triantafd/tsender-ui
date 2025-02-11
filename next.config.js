@@ -1,12 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    distDir: '.fleek',
-    output: 'export',
+    distDir: ".fleek",
+    output: "export",
     images: {
         unoptimized: true,
     },
-    basePath: '',
-    assetPrefix: './',
+    basePath: "",
+    assetPrefix: "./",
     trailingSlash: true,
 }
 
