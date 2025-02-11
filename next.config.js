@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    distDir: ".fleek",
-    output: "export",
+    distDir: 'out',
+    output: 'export',
     images: {
         unoptimized: true,
     },
