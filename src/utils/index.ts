@@ -1,2 +1,2 @@
-export { calculateTotal } from './calculateTotal/calculateTotal'
-export { formatTokenAmount } from './formatTokenAmount/formatTokenAmount'
+export { calculateTotal } from "./calculateTotal/calculateTotal"
+export { formatTokenAmount } from "./formatTokenAmount/formatTokenAmount"
