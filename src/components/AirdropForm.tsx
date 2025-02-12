@@ -43,6 +43,9 @@ export default function AirdropForm({ isUnsafeMode, onModeChange }: AirdropFormP
             },
         ],
     })
+
+
+
     // TODO: See what's in error to see what we should display to user.
     const { data: hash, isPending, error, writeContract } = useWriteContract()
     const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
@@ -58,33 +61,34 @@ export default function AirdropForm({ isUnsafeMode, onModeChange }: AirdropFormP
 
         // This should be a promise, this is weird wagmi design
         if (result < total) {
-            writeContract({
+            await writeContract({
                 abi: erc20Abi,
                 address: tokenAddress as `0x${string}`,
                 functionName: "approve",
                 args: [tSenderAddress as `0x${string}`, total.toString()],
-            })
-            // {
-            //     // onSuccess: () => { console.log("Approved!") },
-            //     onError: (error) => {
-            //         alert("Error approving, see console!")
-            //         console.log(error)
-            //     },
-            //     // onSettled: () => { console.log("wtf") }
-            // })
+            },
+                {
+                    onSuccess: () => {
+                        writeContract({
+                            abi: tsenderAbi,
+                            address: tSenderAddress as `0x${string}`,
+                            functionName: "airdropERC20",
+                            args: [
+                                tokenAddress,
+                                // Comma or new line separated
+                                recipients.split(/[,\n]+/).map(addr => addr.trim()).filter(addr => addr !== ''),
+                                amounts.split(/[,\n]+/).map(amt => amt.trim()).filter(amt => amt !== ''),
+                                total.toString(),
+                            ],
+                        })
+                    },
+                    onError: (error) => {
+                        console.log(error)
+                    },
+                    // onSettled: () => { }
+                })
         }
 
-        writeContract({
-            abi: tsenderAbi,
-            address: tSenderAddress as `0x${string}`,
-            functionName: "airdropERC20",
-            args: [
-                tokenAddress,
-                recipients.split(","),
-                amounts.split(",").map(amt => amt.trim()),
-                total.toString(),
-            ],
-        })
     }
 
     async function getApprovedAmount(tSenderAddress: string | null): Promise<number> {
@@ -116,9 +120,40 @@ export default function AirdropForm({ isUnsafeMode, onModeChange }: AirdropFormP
                     <span>Waiting for confirmation...</span>
                 </div>
             )
+        if (error) {
+            console.log(error)
+            return (
+                <div className="flex items-center justify-center gap-2 w-full">
+                    <CgSpinner className="animate-spin" size={20} />
+                    <span>Error, see console.</span>
+                </div>
+            )
+        }
         if (isConfirmed) return "Transaction confirmed."
         return isUnsafeMode ? "Send Tokens (Unsafe)" : "Send Tokens"
     }
+
+    useEffect(() => {
+        const savedTokenAddress = localStorage.getItem('tokenAddress')
+        const savedRecipients = localStorage.getItem('recipients')
+        const savedAmounts = localStorage.getItem('amounts')
+
+        if (savedTokenAddress) setTokenAddress(savedTokenAddress)
+        if (savedRecipients) setRecipients(savedRecipients)
+        if (savedAmounts) setAmounts(savedAmounts)
+    }, [])
+
+    useEffect(() => {
+        localStorage.setItem('tokenAddress', tokenAddress)
+    }, [tokenAddress])
+
+    useEffect(() => {
+        localStorage.setItem('recipients', recipients)
+    }, [recipients])
+
+    useEffect(() => {
+        localStorage.setItem('amounts', amounts)
+    }, [amounts])
 
     return (
         <div
@@ -142,17 +177,20 @@ export default function AirdropForm({ isUnsafeMode, onModeChange }: AirdropFormP
                 <InputForm
                     label="Token Address"
                     placeholder="0x"
+                    value={tokenAddress}
                     onChange={e => setTokenAddress(e.target.value)}
                 />
                 <InputForm
-                    label="Recipients (comma separated)"
+                    label="Recipients (comma or new line separated)"
                     placeholder="0x123..., 0x456..."
+                    value={recipients}
                     onChange={e => setRecipients(e.target.value)}
                     large={true}
                 />
                 <InputForm
-                    label="Amounts (wei, comma separated)"
+                    label="Amounts (wei; comma or new line separated)"
                     placeholder="100, 200, 300..."
+                    value={amounts}
                     onChange={e => setAmounts(e.target.value)}
                     large={true}
                 />
@@ -204,11 +242,10 @@ export default function AirdropForm({ isUnsafeMode, onModeChange }: AirdropFormP
                 )}
 
                 <button
-                    className={`cursor-pointer flex items-center justify-center w-full py-3 rounded-[9px] text-white transition-colors font-semibold relative border ${
-                        isUnsafeMode
-                            ? "bg-red-500 hover:bg-red-600 border-red-500"
-                            : "bg-blue-500 hover:bg-blue-600 border-blue-500"
-                    }`}
+                    className={`cursor-pointer flex items-center justify-center w-full py-3 rounded-[9px] text-white transition-colors font-semibold relative border ${isUnsafeMode
+                        ? "bg-red-500 hover:bg-red-600 border-red-500"
+                        : "bg-blue-500 hover:bg-blue-600 border-blue-500"
+                        }`}
                     onClick={handleSubmit}
                     disabled={isPending}
                 >
@@ -218,11 +255,9 @@ export default function AirdropForm({ isUnsafeMode, onModeChange }: AirdropFormP
                     <div className="absolute w-full inset-0 mix-blend-overlay z-10 inner-shadow rounded-lg" />
                     {/* White inner border */}
                     <div className="absolute w-full inset-0 mix-blend-overlay z-10 border-[1.5px] border-white/20 rounded-lg" />
-                    {isPending
+                    {isPending || error || isConfirming
                         ? getButtonContent()
-                        : isConfirming
-                          ? getButtonContent()
-                          : isUnsafeMode
+                        : isUnsafeMode
                             ? "Send Tokens (Unsafe)"
                             : "Send Tokens"}
                 </button>
