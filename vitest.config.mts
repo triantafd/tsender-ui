@@ -5,7 +5,7 @@ export default defineConfig({
     plugins: [tsconfigPaths()],
     test: {
         environment: 'jsdom',
-        exclude: ['**/node_modules/**', '**/e2e/**'],
+        exclude: ['**/node_modules/**', '**/test/**', 'playwright-report/**', 'test-results/**'],
         deps: {
             inline: ['wagmi', '@wagmi/core']
         }
