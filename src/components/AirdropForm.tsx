@@ -68,8 +68,8 @@ export default function AirdropForm({ isUnsafeMode, onModeChange }: AirdropFormP
                 args: [tSenderAddress as `0x${string}`, total.toString()],
             },
                 {
-                    onSuccess: () => {
-                        writeContract({
+                    onSuccess: async () => {
+                        await writeContract({
                             abi: tsenderAbi,
                             address: tSenderAddress as `0x${string}`,
                             functionName: "airdropERC20",
@@ -87,6 +87,19 @@ export default function AirdropForm({ isUnsafeMode, onModeChange }: AirdropFormP
                     },
                     // onSettled: () => { }
                 })
+        } else {
+            await writeContract({
+                abi: tsenderAbi,
+                address: tSenderAddress as `0x${string}`,
+                functionName: "airdropERC20",
+                args: [
+                    tokenAddress,
+                    // Comma or new line separated
+                    recipients.split(/[,\n]+/).map(addr => addr.trim()).filter(addr => addr !== ''),
+                    amounts.split(/[,\n]+/).map(amt => amt.trim()).filter(amt => amt !== ''),
+                    total.toString(),
+                ],
+            })
         }
 
     }
