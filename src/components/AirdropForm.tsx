@@ -68,7 +68,7 @@ export default function AirdropForm({ isUnsafeMode, onModeChange }: AirdropFormP
                 args: [tSenderAddress as `0x${string}`, total.toString()],
             },
                 {
-                    onSuccess: async () => {
+                    onSettled: async () => {
                         await writeContract({
                             abi: tsenderAbi,
                             address: tSenderAddress as `0x${string}`,
@@ -85,7 +85,6 @@ export default function AirdropForm({ isUnsafeMode, onModeChange }: AirdropFormP
                     onError: (error) => {
                         console.log(error)
                     },
-                    // onSettled: () => { }
                 })
         } else {
             await writeContract({
