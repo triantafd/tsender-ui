@@ -16,6 +16,7 @@ import { CgSpinner } from "react-icons/cg"
 import { calculateTotal, formatTokenAmount } from "@/utils"
 import { InputForm } from "./ui/InputField"
 import { Tabs, TabsList, TabsTrigger } from "./ui/Tabs"
+import { waitForTransactionReceipt } from "@wagmi/core"
 
 interface AirdropFormProps {
     isUnsafeMode: boolean
@@ -41,53 +42,44 @@ export default function AirdropForm({ isUnsafeMode, onModeChange }: AirdropFormP
                 address: tokenAddress as `0x${string}`,
                 functionName: "name",
             },
+            {
+                abi: erc20Abi,
+                address: tokenAddress as `0x${string}`,
+                functionName: "balanceOf",
+                args: [account.address],
+            },
         ],
     })
+    const [hasEnoughTokens, setHasEnoughTokens] = useState(true)
 
-
-
-    // TODO: See what's in error to see what we should display to user.
-    const { data: hash, isPending, error, writeContract } = useWriteContract()
-    const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
+    const { data: hash, isPending, error, writeContractAsync } = useWriteContract()
+    const { isLoading: isConfirming, isSuccess: isConfirmed, isError } = useWaitForTransactionReceipt({
+        confirmations: 1,
         hash,
     })
 
     const total: number = useMemo(() => calculateTotal(amounts), [amounts])
+
 
     async function handleSubmit() {
         const contractType = isUnsafeMode ? "no_check" : "tsender"
         const tSenderAddress = chainsToTSender[chainId][contractType]
         const result = await getApprovedAmount(tSenderAddress)
 
-        // This should be a promise, this is weird wagmi design
         if (result < total) {
-            await writeContract({
+            const approvalHash = await writeContractAsync({
                 abi: erc20Abi,
                 address: tokenAddress as `0x${string}`,
                 functionName: "approve",
                 args: [tSenderAddress as `0x${string}`, total.toString()],
-            },
-                {
-                    onSettled: async () => {
-                        await writeContract({
-                            abi: tsenderAbi,
-                            address: tSenderAddress as `0x${string}`,
-                            functionName: "airdropERC20",
-                            args: [
-                                tokenAddress,
-                                // Comma or new line separated
-                                recipients.split(/[,\n]+/).map(addr => addr.trim()).filter(addr => addr !== ''),
-                                amounts.split(/[,\n]+/).map(amt => amt.trim()).filter(amt => amt !== ''),
-                                total.toString(),
-                            ],
-                        })
-                    },
-                    onError: (error) => {
-                        console.log(error)
-                    },
-                })
-        } else {
-            await writeContract({
+            })
+            const approvalReceipt = await waitForTransactionReceipt(config, {
+                hash: approvalHash,
+            })
+
+            console.log("Approval confirmed:", approvalReceipt)
+
+            await writeContractAsync({
                 abi: tsenderAbi,
                 address: tSenderAddress as `0x${string}`,
                 functionName: "airdropERC20",
@@ -99,6 +91,19 @@ export default function AirdropForm({ isUnsafeMode, onModeChange }: AirdropFormP
                     total.toString(),
                 ],
             })
+        } else {
+            await writeContractAsync({
+                abi: tsenderAbi,
+                address: tSenderAddress as `0x${string}`,
+                functionName: "airdropERC20",
+                args: [
+                    tokenAddress,
+                    // Comma or new line separated
+                    recipients.split(/[,\n]+/).map(addr => addr.trim()).filter(addr => addr !== ''),
+                    amounts.split(/[,\n]+/).map(amt => amt.trim()).filter(amt => amt !== ''),
+                    total.toString(),
+                ],
+            },)
         }
 
     }
@@ -122,26 +127,27 @@ export default function AirdropForm({ isUnsafeMode, onModeChange }: AirdropFormP
             return (
                 <div className="flex items-center justify-center gap-2 w-full">
                     <CgSpinner className="animate-spin" size={20} />
-                    <span>Confirming...</span>
+                    <span>Confirming in wallet...</span>
                 </div>
             )
         if (isConfirming)
             return (
                 <div className="flex items-center justify-center gap-2 w-full">
                     <CgSpinner className="animate-spin" size={20} />
-                    <span>Waiting for confirmation...</span>
+                    <span>Waiting for transaction to be included...</span>
                 </div>
             )
-        if (error) {
+        if (error || isError) {
             console.log(error)
             return (
                 <div className="flex items-center justify-center gap-2 w-full">
-                    <CgSpinner className="animate-spin" size={20} />
                     <span>Error, see console.</span>
                 </div>
             )
         }
-        if (isConfirmed) return "Transaction confirmed."
+        if (isConfirmed) {
+            return "Transaction confirmed."
+        }
         return isUnsafeMode ? "Send Tokens (Unsafe)" : "Send Tokens"
     }
 
@@ -166,6 +172,15 @@ export default function AirdropForm({ isUnsafeMode, onModeChange }: AirdropFormP
     useEffect(() => {
         localStorage.setItem('amounts', amounts)
     }, [amounts])
+
+    useEffect(() => {
+        if (tokenAddress && total > 0 && tokenData?.[2]?.result as number !== undefined) {
+            const userBalance = tokenData?.[2].result as number;
+            setHasEnoughTokens(userBalance >= total);
+        } else {
+            setHasEnoughTokens(true);
+        }
+    }, [tokenAddress, total, tokenData]);
 
     return (
         <div
@@ -257,9 +272,9 @@ export default function AirdropForm({ isUnsafeMode, onModeChange }: AirdropFormP
                     className={`cursor-pointer flex items-center justify-center w-full py-3 rounded-[9px] text-white transition-colors font-semibold relative border ${isUnsafeMode
                         ? "bg-red-500 hover:bg-red-600 border-red-500"
                         : "bg-blue-500 hover:bg-blue-600 border-blue-500"
-                        }`}
+                        } ${!hasEnoughTokens && tokenAddress ? "opacity-50 cursor-not-allowed" : ""}`}
                     onClick={handleSubmit}
-                    disabled={isPending}
+                    disabled={isPending || (!hasEnoughTokens && tokenAddress !== "")}
                 >
                     {/* Gradient */}
                     <div className="absolute w-full inset-0 bg-gradient-to-b from-white/25 via-80% to-transparent mix-blend-overlay z-10 rounded-lg" />
@@ -269,9 +284,11 @@ export default function AirdropForm({ isUnsafeMode, onModeChange }: AirdropFormP
                     <div className="absolute w-full inset-0 mix-blend-overlay z-10 border-[1.5px] border-white/20 rounded-lg" />
                     {isPending || error || isConfirming
                         ? getButtonContent()
-                        : isUnsafeMode
-                            ? "Send Tokens (Unsafe)"
-                            : "Send Tokens"}
+                        : !hasEnoughTokens && tokenAddress
+                            ? "Insufficient token balance"
+                            : isUnsafeMode
+                                ? "Send Tokens (Unsafe)"
+                                : "Send Tokens"}
                 </button>
             </div>
         </div>
