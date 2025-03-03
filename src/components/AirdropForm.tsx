@@ -71,7 +71,7 @@ export default function AirdropForm({ isUnsafeMode, onModeChange }: AirdropFormP
                 abi: erc20Abi,
                 address: tokenAddress as `0x${string}`,
                 functionName: "approve",
-                args: [tSenderAddress as `0x${string}`, total.toString()],
+                args: [tSenderAddress as `0x${string}`, BigInt(total)],
             })
             const approvalReceipt = await waitForTransactionReceipt(config, {
                 hash: approvalHash,
@@ -88,7 +88,7 @@ export default function AirdropForm({ isUnsafeMode, onModeChange }: AirdropFormP
                     // Comma or new line separated
                     recipients.split(/[,\n]+/).map(addr => addr.trim()).filter(addr => addr !== ''),
                     amounts.split(/[,\n]+/).map(amt => amt.trim()).filter(amt => amt !== ''),
-                    total.toString(),
+                    BigInt(total),
                 ],
             })
         } else {
@@ -101,7 +101,7 @@ export default function AirdropForm({ isUnsafeMode, onModeChange }: AirdropFormP
                     // Comma or new line separated
                     recipients.split(/[,\n]+/).map(addr => addr.trim()).filter(addr => addr !== ''),
                     amounts.split(/[,\n]+/).map(amt => amt.trim()).filter(amt => amt !== ''),
-                    total.toString(),
+                    BigInt(total),
                 ],
             },)
         }
