@@ -58,16 +58,13 @@ export default function AirdropForm({ isUnsafeMode, onModeChange }: AirdropFormP
         hash,
     })
 
-    const total: number = useMemo(() => calculateTotal(amounts), [amounts])
+    const total: bigint = useMemo(() => calculateTotal(amounts), [amounts])
 
 
     async function handleSubmit() {
         const contractType = isUnsafeMode ? "no_check" : "tsender"
         const tSenderAddress = chainsToTSender[chainId][contractType]
         const result = await getApprovedAmount(tSenderAddress)
-
-        console.log("Approved amount:", result)
-        console.log("Total amount:", total)
 
         if (result < total) {
             const approvalHash = await writeContractAsync({
@@ -111,10 +108,10 @@ export default function AirdropForm({ isUnsafeMode, onModeChange }: AirdropFormP
 
     }
 
-    async function getApprovedAmount(tSenderAddress: string | null): Promise<number> {
+    async function getApprovedAmount(tSenderAddress: string | null): Promise<bigint> {
         if (!tSenderAddress) {
             alert("This chain only has the safer version!")
-            return 0
+            return BigInt(0)
         }
         const response = await readContract(config, {
             abi: erc20Abi,
@@ -122,7 +119,8 @@ export default function AirdropForm({ isUnsafeMode, onModeChange }: AirdropFormP
             functionName: "allowance",
             args: [account.address, tSenderAddress as `0x${string}`],
         })
-        return response as number
+
+        return response as bigint
     }
 
     function getButtonContent() {
@@ -177,8 +175,11 @@ export default function AirdropForm({ isUnsafeMode, onModeChange }: AirdropFormP
     }, [amounts])
 
     useEffect(() => {
-        if (tokenAddress && total > 0 && tokenData?.[2]?.result as number !== undefined) {
-            const userBalance = tokenData?.[2].result as number;
+        if (tokenAddress && total > BigInt(0) && tokenData?.[2]?.result !== undefined) {
+            // Convert the result to BigInt to ensure proper comparison
+            const userBalance = BigInt(tokenData?.[2].result!.toString());
+
+            // Compare using BigInt operators
             setHasEnoughTokens(userBalance >= total);
         } else {
             setHasEnoughTokens(true);
