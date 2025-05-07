@@ -66,6 +66,9 @@ export default function AirdropForm({ isUnsafeMode, onModeChange }: AirdropFormP
         const tSenderAddress = chainsToTSender[chainId][contractType]
         const result = await getApprovedAmount(tSenderAddress)
 
+        console.log("Approved amount:", result)
+        console.log("Total amount:", total)
+
         if (result < total) {
             const approvalHash = await writeContractAsync({
                 abi: erc20Abi,
